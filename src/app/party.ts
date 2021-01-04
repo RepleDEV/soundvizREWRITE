@@ -1,7 +1,7 @@
 import { get_pitch } from "./pitchdetect";
 import $ from "jquery";
 
-function party(colors: Colors): void {
+function party(colors: Colors, callback: CalculateCallback): void {
     // Get Stream
     navigator.mediaDevices
         .getUserMedia({
@@ -23,17 +23,19 @@ function party(colors: Colors): void {
             audioStream.connect(analyserNode);
             // analyserNode.connect(audioContext.destination)
 
-            calculate(audioContext, analyserNode, colors);
+            calculate(audioContext, analyserNode, colors, callback);
         })
         .catch(console.error);
 }
 
+type CalculateCallback = (color: Colors | number[]) => void;
 function calculate(
     audioContext: AudioContext,
     analyser: AnalyserNode,
-    colors: Colors
+    colors: Colors,
+    callback: CalculateCallback
 ): void {
-    requestAnimationFrame(() => calculate(audioContext, analyser, colors));
+    requestAnimationFrame(() => calculate(audioContext, analyser, colors, callback));
 
     const volume = get_volume(analyser, 50, 3);
     let pitch = get_pitch(audioContext, analyser);
@@ -45,12 +47,9 @@ function calculate(
 
     pitch = ((pitch - pitch_min) * 100) / (pitch_max - pitch_min);
 
-    const color = get_color(colors, pitch);
+    const color = get_color(colors, pitch).map(x => x * volume / 100);
 
-    $("body").css(
-        "background-color",
-        `rgb(${color.map((x) => (x * volume) / 100).join(",")})`
-    );
+    callback(color);
 }
 
 type Color = [number, number, number];
