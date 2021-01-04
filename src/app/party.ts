@@ -1,7 +1,7 @@
 import { get_pitch } from "./pitchdetect";
 import $ from "jquery";
 
-function party(): void {
+function party(colors: Colors): void {
     // Get Stream
     navigator.mediaDevices
         .getUserMedia({
@@ -23,24 +23,27 @@ function party(): void {
             audioStream.connect(analyserNode);
             // analyserNode.connect(audioContext.destination)
 
-            calculate(audioContext, analyserNode);
+            calculate(audioContext, analyserNode, colors);
         })
         .catch(console.error);
 }
 
-function calculate(audioContext: AudioContext, analyser: AnalyserNode): void {
-    requestAnimationFrame(() => calculate(audioContext, analyser));
+function calculate(audioContext: AudioContext, analyser: AnalyserNode, colors: Colors): void {
+    requestAnimationFrame(() => calculate(audioContext, analyser, colors));
 
     const volume = get_volume(analyser, 50, 3);
     let pitch = get_pitch(audioContext, analyser);
 
     const pitch_max = 5000;
+    const pitch_min = 200;
     pitch = pitch > pitch_max ? pitch_max : pitch;
-    pitch *= 100 / pitch_max;
+    pitch = pitch < pitch_min ? pitch_min : pitch;
 
-    const colors = get_color([[0,255,255], [0,0,255]], pitch);
+    pitch = (pitch - pitch_min) * 100 / (pitch_max - pitch_min);    
 
-    $("body").css("background-color", `rgb(${colors.map(x => x * volume / 100).join(",")})`);
+    const color = get_color(colors, pitch);
+
+    $("body").css("background-color", `rgb(${color.map(x => x * volume / 100).join(",")})`);
 }
 
 type Color = [number, number, number]
